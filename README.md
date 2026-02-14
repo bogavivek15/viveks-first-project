@@ -1,76 +1,97 @@
-Welcome to StudentDesk Project
-Project Info
+# 🎓 Student Desk
 
-This project is developed and maintained locally with personal effort and customization.
+**Student Desk** is a full-stack academic resource portal designed for B.Tech students.  
+It centralizes study notes and question papers while providing an AI-powered tutor for instant doubt solving.
 
-How to Edit and Run This Project
+![Project Status](https://img.shields.io/badge/Status-Development-green)
+![Tech Stack](https://img.shields.io/badge/Stack-React_|_Supabase_|_TypeScript-blue)
 
-You can easily work on this project using your preferred development environment.
+---
 
-Work Locally Using Your IDE
+## 🌐 Live Demo
 
-Follow these steps to set up and run your project locally:
+🔗 https://student-desk.online
 
-# Step 1: Clone the repository using your Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## 🚀 Key Features
 
-# Step 3: Install all necessary dependencies.
-npm i
+- **📂 Structured Repository:** Drill-down navigation (Course → Year → Semester → Subject).
+- **🤖 AI Tutor:** Integrated chatbot powered by **Google Gemma 3 (12B)**.
+- **📄 PDF Viewer:** View and download notes and question papers.
+- **⚡ Real-time Search:** Instant subject search from dashboard.
+- **🛡️ Admin Panel:** Secure interface for uploading and managing content.
+- **🔐 Secure Auth:** Role-based access control using Supabase Auth.
+- **🗄️ Database Security:** Row Level Security (RLS) enabled.
 
-# Step 4: Start the development server with auto-reloading and live preview.
-npm run dev
+---
 
-Edit Files Directly in GitHub
+## 🛠️ Tech Stack
 
-If you prefer working online through GitHub:
+**Frontend**
+- React 18
+- Vite
+- TypeScript
+- Tailwind CSS
+- Shadcn/UI
+- TanStack React Query
 
-Navigate to the desired file(s) in your repository.
+**Backend**
+- Supabase (PostgreSQL, Auth, Storage)
 
-Click the Edit (pencil) icon at the top right of the file.
+**AI Integration**
+- Supabase Edge Functions (Deno)
+- Google Gemini API (Gemma 3 – 12B)
 
-Make your changes.
+---
 
-Commit and push your updates.
+## 🗄️ Database Schema
 
-Use GitHub Codespaces (Optional)
+Primary Tables:
 
-If you prefer cloud-based development:
+- `profiles` – User identity and roles  
+- `user_roles` – Role-based access control  
+- `courses` – Academic branches  
+- `subjects` – Subject classification  
+- `notes` – Metadata for PDF files  
+- `contact_messages` – User inquiries  
 
-Open your repository on GitHub.
+Row Level Security (RLS) is enabled to protect sensitive data.
 
-Click Code → Codespaces → New Codespace.
+---
 
-Start editing directly in the Codespace environment.
+## ⚙️ Installation & Setup
 
-Commit and push your changes when done.
+### 1️⃣ Clone the Repository
 
-Technologies Used
+```bash
+git clone https://github.com/yourusername/student-desk.git
+cd student-desk
 
-This project is built using:
+   
+2. **Install dependencies**
+   npm install
+    # or
+   bun install
+3.**Environment Variables**
+   VITE_SUPABASE_URL=your_supabase_url
+   VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_key
 
-Vite
+4. **Run the Development Server**
+    npm run dev
 
-TypeScript
+🧠 AI Implementation
+The chatbot uses a Supabase Edge Function (ask-gemini) to communicate with the Google Gemma 3 model. It includes:
 
-React
+Context-aware prompting.
 
-shadcn-ui
+Markdown rendering for math and code responses.
 
-Tailwind CSS
+Client-side rate limiting (5s cooldown).
 
-Deployment
+📝 Future Enhancements
+[ ] Dark Mode toggle.
 
-Once development is complete, you can deploy the project using any preferred platform, such as:
+[ ] Student note uploads (Community sourcing).
 
-Vercel
-
-Netlify
-
-GitHub Pages
-
-Render
-
-Follow your chosen platform’s deployment steps to go live.
+[ ] Bookmarking favorite subjects.
