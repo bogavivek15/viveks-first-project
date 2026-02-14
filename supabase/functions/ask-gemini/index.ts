@@ -98,10 +98,9 @@ ${message}
 Now, answer the student's question by strictly following ALL the rules above.
 `;
 
-    // 6. Call Gemma 3 API (Selected for high 30 RPM quota)
-    // Changing model from gemini-2.0-flash to gemma-3-12b-it
+    // 6. Call Gemini API
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-12b-it:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
