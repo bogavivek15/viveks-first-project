@@ -19,12 +19,17 @@ const AdminPanel = () => {
     }
   }, [user, isAdmin, loading, navigate]);
 
+  // Prevent content flash: don't render admin UI until auth is verified
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
+  }
+
+  if (!user || !isAdmin) {
+    return null;
   }
 
   return (

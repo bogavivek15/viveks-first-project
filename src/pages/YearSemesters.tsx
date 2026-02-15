@@ -11,6 +11,9 @@ interface Course {
   short_name: string;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const VALID_YEARS = ['1', '2', '3', '4'];
+
 const YearSemesters = () => {
   const { courseId, year } = useParams();
   const [course, setCourse] = useState<Course | null>(null);
@@ -20,10 +23,12 @@ const YearSemesters = () => {
   const semesters = [1, 2];
 
   useEffect(() => {
-    if (courseId) {
-      fetchCourse();
+    if (!courseId || !UUID_RE.test(courseId) || !year || !VALID_YEARS.includes(year)) {
+      navigate('/dashboard');
+      return;
     }
-  }, [courseId]);
+    fetchCourse();
+  }, [courseId, year]);
 
   const fetchCourse = async () => {
     try {

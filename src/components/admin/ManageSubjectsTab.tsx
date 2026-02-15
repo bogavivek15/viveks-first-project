@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 const subjectSchema = z.object({
@@ -41,6 +41,8 @@ interface Subject {
   };
 }
 
+const SUBJECTS_PAGE_SIZE = 25;
+
 export function ManageSubjectsTab() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -48,6 +50,8 @@ export function ManageSubjectsTab() {
   const [submitting, setSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
   const form = useForm<SubjectFormData>({
     resolver: zodResolver(subjectSchema),
@@ -56,6 +60,11 @@ export function ManageSubjectsTab() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Re-fetch subjects when page changes
+  useEffect(() => {
+    if (!loading) fetchSubjects();
+  }, [page]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -73,17 +82,19 @@ export function ManageSubjectsTab() {
   };
 
   const fetchSubjects = async () => {
-    const { data, error } = await supabase
+    const { data, error, count } = await supabase
       .from('subjects')
-      .select('*, courses(short_name)')
+      .select('*, courses(short_name)', { count: 'exact' })
       .order('year')
       .order('semester')
-      .order('name');
+      .order('name')
+      .range(page * SUBJECTS_PAGE_SIZE, (page + 1) * SUBJECTS_PAGE_SIZE - 1);
     if (error) {
       toast.error('Failed to load subjects');
       return;
     }
     setSubjects(data || []);
+    setTotalCount(count || 0);
   };
 
   const onSubmit = async (data: SubjectFormData) => {
@@ -340,6 +351,33 @@ export function ManageSubjectsTab() {
               ))}
             </TableBody>
           </Table>
+
+          {/* Pagination Controls */}
+          {totalCount > SUBJECTS_PAGE_SIZE && (
+            <div className="flex items-center justify-between pt-4">
+              <p className="text-sm text-muted-foreground">
+                Showing {page * SUBJECTS_PAGE_SIZE + 1}–{Math.min((page + 1) * SUBJECTS_PAGE_SIZE, totalCount)} of {totalCount}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 0}
+                  onClick={() => setPage(p => p - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={(page + 1) * SUBJECTS_PAGE_SIZE >= totalCount}
+                  onClick={() => setPage(p => p + 1)}
+                >
+                  Next <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

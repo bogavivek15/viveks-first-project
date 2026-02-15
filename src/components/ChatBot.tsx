@@ -39,8 +39,8 @@ export function ChatBot({ subjectName, noteTitle }: ChatBotProps) {
   }, [messages, isOpen]);
 
   const handleSend = async () => {
-    // Prevent sending if empty or in cooldown
-    if (!input.trim() || isCooldown) return;
+    // Prevent sending if empty, too long, or in cooldown
+    if (!input.trim() || input.length > 2000 || isCooldown) return;
 
     const userMessage = input.trim();
     setInput('');

@@ -23,10 +23,31 @@ const Contact = () => {
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Honeypot field — bots fill this, real users don't see it
+  const [honeypot, setHoneypot] = useState('');
+  // Timestamp when form was rendered (reject instant submissions)
+  const [formLoadedAt] = useState(Date.now());
+  // Track last submission to prevent rapid fire
+  const [lastSubmitAt, setLastSubmitAt] = useState(0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
+
+    // Bot detection: honeypot filled
+    if (honeypot) return;
+
+    // Bot detection: form submitted faster than 2 seconds
+    if (Date.now() - formLoadedAt < 2000) {
+      toast.error('Please take a moment before submitting.');
+      return;
+    }
+
+    // Rate limit: one submission every 30 seconds
+    if (Date.now() - lastSubmitAt < 30000) {
+      toast.error('Please wait before sending another message.');
+      return;
+    }
 
     const validation = contactSchema.safeParse(formData);
     if (!validation.success) {
@@ -52,6 +73,7 @@ const Contact = () => {
 
       if (error) throw error;
 
+      setLastSubmitAt(Date.now());
       toast.success('Message sent successfully! We\'ll get back to you soon.');
       setFormData({ name: '', email: '', message: '' });
     } catch (error) {
@@ -161,6 +183,18 @@ const Contact = () => {
                     />
                     {errors.message && <p className="text-sm text-destructive">{errors.message}</p>}
                   </div>
+
+                  {/* Honeypot — invisible to real users, attracts bots */}
+                  <input
+                    type="text"
+                    name="website"
+                    value={honeypot}
+                    onChange={(e) => setHoneypot(e.target.value)}
+                    className="absolute opacity-0 pointer-events-none h-0 w-0"
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    autoComplete="off"
+                  />
 
                   <Button type="submit" className="w-full bg-gradient-to-r from-primary to-primary-dark" disabled={loading}>
                     {loading ? 'Sending...' : (

@@ -11,6 +11,8 @@ interface Course {
   short_name: string;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const CourseYears = () => {
   const { courseId } = useParams();
   const [course, setCourse] = useState<Course | null>(null);
@@ -20,9 +22,11 @@ const CourseYears = () => {
   const years = [1, 2, 3, 4];
 
   useEffect(() => {
-    if (courseId) {
-      fetchCourse();
+    if (!courseId || !UUID_RE.test(courseId)) {
+      navigate('/dashboard');
+      return;
     }
+    fetchCourse();
   }, [courseId]);
 
   const fetchCourse = async () => {

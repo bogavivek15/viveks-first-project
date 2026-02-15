@@ -1,3 +1,5 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
 
 const corsHeaders = {
@@ -12,6 +14,10 @@ interface AskGeminiRequest {
   context?: string;
   history?: { role: string; content: string }[];
 }
+
+// Simple in-memory rate limiter (resets on cold start — still effective)
+const rateLimiter = new Map<string, number>();
+const RATE_LIMIT_MS = 3000; // 3 seconds between requests per user
 
 Deno.serve(async (req: Request): Promise<Response> => {
   // 1. Handle CORS preflight
@@ -36,7 +42,56 @@ Deno.serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    // 4. Safely parse request body
+    // 4. Authenticate the caller via Supabase JWT
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ reply: "Unauthorized — please log in." }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ reply: "Unauthorized — invalid session." }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    // 5. Server-side rate limiting per user
+    const now = Date.now();
+    const lastRequest = rateLimiter.get(user.id) || 0;
+    if (now - lastRequest < RATE_LIMIT_MS) {
+      return new Response(
+        JSON.stringify({ reply: "Please wait a few seconds before sending another message." }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+    rateLimiter.set(user.id, now);
+
+    // Clean up old entries every 100 requests to prevent memory leak
+    if (rateLimiter.size > 1000) {
+      for (const [uid, ts] of rateLimiter) {
+        if (now - ts > 60000) rateLimiter.delete(uid);
+      }
+    }
+
+    // 6. Safely parse request body
     let body: AskGeminiRequest;
     try {
       body = await req.json();
@@ -54,6 +109,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const context = body.context?.trim() || "";
     const history = body.history || [];
 
+    // 7. Validate message length (max 2000 chars)
     if (!message) {
       return new Response(
         JSON.stringify({ reply: "Message is required" }),
@@ -64,7 +120,20 @@ Deno.serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    // 5. System prompt
+    if (message.length > 2000) {
+      return new Response(
+        JSON.stringify({ reply: "Message too long (max 2000 characters)." }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    // Validate history length
+    const safeHistory = Array.isArray(history) ? history.slice(-6) : [];
+
+    // 8. System prompt
     const systemPrompt = `You are a friendly and helpful B.Tech engineering study assistant.
 
 Behavior Rules:
@@ -79,7 +148,7 @@ Behavior Rules:
 9. Remember the conversation context from previous messages.
 ${context ? `Subject Context: ${context}` : ""}`;
 
-    // 6. Call Groq API (ultra-fast inference) with model fallback
+    // 9. Call Groq API (ultra-fast inference) with model fallback
     const models = [
       "llama-3.3-70b-versatile",
       "llama-3.1-8b-instant",
@@ -105,7 +174,7 @@ ${context ? `Subject Context: ${context}` : ""}`;
             model,
             messages: [
               { role: "system", content: systemPrompt },
-              ...history.slice(-6).map((msg: any) => ({
+              ...safeHistory.map((msg: any) => ({
                 role: msg.role === "assistant" ? "assistant" : "user",
                 content: msg.content,
               })),

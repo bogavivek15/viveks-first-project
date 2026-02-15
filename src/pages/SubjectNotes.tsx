@@ -25,6 +25,8 @@ interface Subject {
   code: string;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const SubjectNotes = () => {
   const { courseId, year, semester, subjectId } = useParams();
   const [subject, setSubject] = useState<Subject | null>(null);
@@ -33,6 +35,11 @@ const SubjectNotes = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Validate UUID params before querying
+    if (!subjectId || !UUID_RE.test(subjectId)) {
+      navigate('/dashboard');
+      return;
+    }
     let isMounted = true;
 
     const fetchSubjectAndNotes = async () => {
@@ -84,6 +91,18 @@ const SubjectNotes = () => {
   }, [subjectId]);
 
   const handleDownload = async (fileUrl: string, fileName: string) => {
+    // Validate download URL origin — only allow Supabase storage URLs
+    try {
+      const url = new URL(fileUrl);
+      if (!url.hostname.endsWith('.supabase.co') && !url.hostname.endsWith('.supabase.in')) {
+        toast.error('Invalid download URL');
+        return;
+      }
+    } catch {
+      toast.error('Invalid download URL');
+      return;
+    }
+
     const toastId = toast.loading('Starting download...');
     
     try {

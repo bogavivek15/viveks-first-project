@@ -51,31 +51,46 @@ const Dashboard = () => {
   }, [user]);
 
   useEffect(() => {
-    const handleSearch = async () => {
-      if (!searchQuery.trim()) {
-        setSearchResults([]);
-        return;
-      }
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
 
+    const controller = new AbortController();
+
+    const timeoutId = setTimeout(async () => {
       setIsSearching(true);
       try {
+        // Escape ILIKE special characters to prevent pattern injection
+        const escaped = searchQuery.replace(/[%_\\]/g, '\\$&');
+
         const { data, error } = await supabase
           .from('subjects')
           .select('*, courses(short_name)')
-          .or(`name.ilike.%${searchQuery}%,code.ilike.%${searchQuery}%`)
-          .limit(5);
+          .or(`name.ilike.%${escaped}%,code.ilike.%${escaped}%`)
+          .limit(5)
+          .abortSignal(controller.signal);
 
         if (error) throw error;
-        setSearchResults((data as any) || []);
-      } catch (error) {
-        console.error('Search error:', error);
+        if (!controller.signal.aborted) {
+          setSearchResults((data as any) || []);
+        }
+      } catch (error: any) {
+        if (error?.name !== 'AbortError') {
+          console.error('Search error:', error);
+        }
       } finally {
-        setIsSearching(false);
+        if (!controller.signal.aborted) {
+          setIsSearching(false);
+        }
       }
-    };
+    }, 300);
 
-    const timeoutId = setTimeout(handleSearch, 300);
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
   }, [searchQuery]);
 
   const fetchCourses = async () => {

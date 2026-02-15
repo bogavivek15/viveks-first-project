@@ -21,9 +21,13 @@ const uploadSchema = z.object({
   subjectId: z.string().min(1, 'Please select a subject'),
   resourceType: z.enum(['notes', 'question_papers']),
   examType: z.enum(['regular', 'supply', 'both']),
-  file: z.instanceof(File).refine((file) => file.type === 'application/pdf', {
-    message: 'Only PDF files are allowed',
-  }),
+  file: z.instanceof(File)
+    .refine((file) => file.type === 'application/pdf', {
+      message: 'Only PDF files are allowed',
+    })
+    .refine((file) => file.size <= 10 * 1024 * 1024, {
+      message: 'File must be under 10 MB',
+    }),
 });
 
 type UploadFormData = z.infer<typeof uploadSchema>;
