@@ -62,48 +62,22 @@ Deno.serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    // 5. Prompt for AI model
-    const prompt = `
-You are an expert engineering tutor for a B.Tech-level student.
-Your goal is to provide exam-focused, clear, and concise answers.
+    // 5. Prompt for AI model (kept concise for speed)
+    const prompt = `You are a B.Tech engineering tutor. Give exam-focused, concise answers.
+Rules: No greetings. Use **bold headings**, bullet points, short paragraphs. Markdown only. Be direct.
+${context ? `Context: ${context}` : ""}
+Question: ${message}`;
 
-${context ? `Additional Context (use only if helpful):\n${context}\n` : ""}
+    // 6. Call Gemini API (flash-lite for fastest response)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-Student Question:
-${message}
-
-### RESPONSE RULES (VERY IMPORTANT)
-
-1. Direct Start
-   - Start directly with the explanation or answer.
-   - Do NOT write phrases like "Here is the answer" or "Sure, I can help".
-
-2. Language
-   - Use simple, professional English.
-   - Avoid heavy jargon. If a technical term is needed, explain it briefly.
-
-3. Structure
-   - Use **bold headings** like: **Definition**, **Explanation**, **Advantages**, etc.
-   - Use bullet points and numbered lists for clarity.
-   - Keep paragraphs short (1–3 lines).
-
-4. Exam Focus
-   - Focus on what is important for university exams and viva.
-   - Be concise but complete.
-
-5. Formatting
-   - Use Markdown formatting properly.
-   - No greeting or closing sentence.
-
-Now, answer the student's question by strictly following ALL the rules above.
-`;
-
-    // 6. Call Gemini API
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           contents: [
             {
@@ -113,11 +87,13 @@ Now, answer the student's question by strictly following ALL the rules above.
           ],
           generationConfig: {
             temperature: 0.3,
-            maxOutputTokens: 1024,
+            maxOutputTokens: 512,
           },
         }),
       },
     );
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -143,9 +119,13 @@ Now, answer the student's question by strictly following ALL the rules above.
   } catch (error: any) {
     console.error("Function Error:", error?.message || error);
 
+    const errMsg = error?.name === "AbortError"
+      ? "Response timed out. Please try a simpler question."
+      : (error?.message || "Unknown error");
+
     return new Response(
       JSON.stringify({
-        reply: `Note: ${error?.message || "Unknown error"}`,
+        reply: `Note: ${errMsg}`,
       }),
       {
         status: 200, // Returning 200 so the frontend can display the error message in the chat UI
