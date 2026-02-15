@@ -72,7 +72,7 @@ export function ChatBot({ subjectName, noteTitle }: ChatBotProps) {
         .slice(-6)
         .map(m => ({ role: m.role, content: m.content }));
 
-      const { data, error } = await supabase.functions.invoke('ask-gemini', {
+      const { data, error } = await supabase.functions.invoke('ask-groq', {
         body: {
           message: userMessage,
           context: `Subject: ${subjectName}${noteTitle ? `, Specific Topic: ${noteTitle}` : ''}`,
@@ -80,15 +80,31 @@ export function ChatBot({ subjectName, noteTitle }: ChatBotProps) {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        // For FunctionsHttpError, the edge function returned a non-2xx status
+        // but may still have a useful reply in the response body
+        if (error.context && typeof error.context.json === 'function') {
+          try {
+            const errorBody = await error.context.json();
+            if (errorBody?.reply) {
+              setMessages(prev => [...prev, { role: 'assistant', content: errorBody.reply }]);
+              return;
+            }
+          } catch {
+            // Could not parse error response body, fall through
+          }
+        }
+        throw error;
+      }
 
       const reply = data?.reply || "I'm sorry, I couldn't understand that. Could you please rephrase?";
 
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Chat error:', error);
-      toast.error('Failed to get answer. Please try again.');
-      setMessages(prev => [...prev, { role: 'assistant', content: "I'm having trouble connecting right now. Please try again later." }]);
+      const errorMessage = error?.message || 'Unknown error';
+      toast.error(`Chat error: ${errorMessage}`);
+      setMessages(prev => [...prev, { role: 'assistant', content: `I'm having trouble connecting right now. Error: ${errorMessage}. Please try again later.` }]);
     } finally {
       setIsLoading(false);
     }

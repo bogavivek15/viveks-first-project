@@ -2,14 +2,30 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "https://studentdesk.vercel.app",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-application-name",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+// Build dynamic CORS headers based on the request origin
+const ALLOWED_ORIGINS = [
+  "https://student-desk.online",
+  "https://www.student-desk.online",
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:3000",
+  "http://localhost:8080",
+];
 
-interface AskGeminiRequest {
+function getCorsHeaders(req?: Request) {
+  const origin = req?.headers.get("Origin") || "";
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin)
+    ? origin
+    : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type, x-application-name",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
+}
+
+interface AskGroqRequest {
   message?: string;
   context?: string;
   history?: { role: string; content: string }[];
@@ -22,7 +38,7 @@ const RATE_LIMIT_MS = 3000; // 3 seconds between requests per user
 Deno.serve(async (req: Request): Promise<Response> => {
   // 1. Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: getCorsHeaders(req) });
   }
 
   try {
@@ -37,7 +53,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         JSON.stringify({ reply: "Method not allowed" }),
         {
           status: 405,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         },
       );
     }
@@ -49,7 +65,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         JSON.stringify({ reply: "Unauthorized — please log in." }),
         {
           status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         },
       );
     }
@@ -65,7 +81,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         JSON.stringify({ reply: "Unauthorized — invalid session." }),
         {
           status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         },
       );
     }
@@ -78,7 +94,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         JSON.stringify({ reply: "Please wait a few seconds before sending another message." }),
         {
           status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         },
       );
     }
@@ -92,7 +108,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
 
     // 6. Safely parse request body
-    let body: AskGeminiRequest;
+    let body: AskGroqRequest;
     try {
       body = await req.json();
     } catch {
@@ -100,7 +116,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         JSON.stringify({ reply: "Invalid JSON body" }),
         {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         },
       );
     }
@@ -115,7 +131,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         JSON.stringify({ reply: "Message is required" }),
         {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         },
       );
     }
@@ -125,7 +141,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         JSON.stringify({ reply: "Message too long (max 2000 characters)." }),
         {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         },
       );
     }
@@ -217,7 +233,7 @@ ${context ? `Subject Context: ${context}` : ""}`;
     }
 
     return new Response(JSON.stringify({ reply }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
 
   } catch (error: any) {
@@ -233,7 +249,7 @@ ${context ? `Subject Context: ${context}` : ""}`;
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       },
     );
   }
