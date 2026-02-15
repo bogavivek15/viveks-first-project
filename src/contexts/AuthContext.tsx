@@ -9,11 +9,11 @@ interface AuthContextType {
   session: Session | null;
   isAdmin: boolean;
   loading: boolean;
-  signUp: (email: string, password: string, name: string, branch?: string) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, name: string, branch?: string) => Promise<{ error: { message: string } | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: { message: string } | null }>;
   signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<{ error: any }>;
-  updatePassword: (password: string) => Promise<{ error: any }>;
+  resetPassword: (email: string) => Promise<{ error: { message: string } | null }>;
+  updatePassword: (password: string) => Promise<{ error: { message: string } | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -112,8 +112,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       toast.success('Account created successfully!');
       return { error: null };
-    } catch (error: any) {
-      return { error: { message: error.message || 'Failed to sign up' } };
+    } catch (error) {
+      return { error: { message: error instanceof Error ? error.message : 'Failed to sign up' } };
     }
   };
 
@@ -133,8 +133,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       toast.success('Signed in successfully!');
       return { error: null };
-    } catch (error: any) {
-      return { error: { message: error.message || 'Failed to sign in' } };
+    } catch (error) {
+      return { error: { message: error instanceof Error ? error.message : 'Failed to sign in' } };
     }
   };
 
@@ -165,8 +165,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       toast.success('Password reset email sent! Check your inbox.');
       return { error: null };
-    } catch (error: any) {
-      return { error: { message: error.message || 'Failed to send reset email' } };
+    } catch (error) {
+      return { error: { message: error instanceof Error ? error.message : 'Failed to send reset email' } };
     }
   };
 
@@ -180,8 +180,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       toast.success('Password updated successfully!');
       return { error: null };
-    } catch (error: any) {
-      return { error: { message: error.message || 'Failed to update password' } };
+    } catch (error) {
+      return { error: { message: error instanceof Error ? error.message : 'Failed to update password' } };
     }
   };
 

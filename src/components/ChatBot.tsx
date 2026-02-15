@@ -38,6 +38,16 @@ export function ChatBot({ subjectName, noteTitle }: ChatBotProps) {
     }
   }, [messages, isOpen]);
 
+  // Close chatbot on ESC key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
   const handleSend = async () => {
     // Prevent sending if empty, too long, or in cooldown
     if (!input.trim() || input.length > 2000 || isCooldown) return;
@@ -138,15 +148,15 @@ export function ChatBot({ subjectName, noteTitle }: ChatBotProps) {
                       >
                         <ReactMarkdown
                           components={{
-                            strong: ({node, ...props}) => <span className="font-bold" {...props} />,
-                            ul: ({node, ...props}) => <ul className="list-disc pl-4 space-y-1 my-1" {...props} />,
-                            ol: ({node, ...props}) => <ol className="list-decimal pl-4 space-y-1 my-1" {...props} />,
-                            li: ({node, ...props}) => <li className="break-words" {...props} />,
-                            p: ({node, ...props}) => <p className="mb-2 last:mb-0 leading-relaxed whitespace-pre-wrap break-words" {...props} />,
-                            h1: ({node, ...props}) => <h1 className="font-bold text-lg mb-2 break-words" {...props} />,
-                            h2: ({node, ...props}) => <h2 className="font-bold text-base mb-2 break-words" {...props} />,
-                            h3: ({node, ...props}) => <h3 className="font-bold text-sm mb-1 break-words" {...props} />,
-                            code: ({node, ...props}) => <code className="bg-black/10 px-1 rounded text-xs font-mono break-all whitespace-pre-wrap" {...props} />,
+                            strong: (props) => <span className="font-bold" {...props} />,
+                            ul: (props) => <ul className="list-disc pl-4 space-y-1 my-1" {...props} />,
+                            ol: (props) => <ol className="list-decimal pl-4 space-y-1 my-1" {...props} />,
+                            li: (props) => <li className="break-words" {...props} />,
+                            p: (props) => <p className="mb-2 last:mb-0 leading-relaxed whitespace-pre-wrap break-words" {...props} />,
+                            h1: (props) => <h1 className="font-bold text-lg mb-2 break-words" {...props} />,
+                            h2: (props) => <h2 className="font-bold text-base mb-2 break-words" {...props} />,
+                            h3: (props) => <h3 className="font-bold text-sm mb-1 break-words" {...props} />,
+                            code: (props) => <code className="bg-black/10 px-1 rounded text-xs font-mono break-all whitespace-pre-wrap" {...props} />,
                           }}
                         >
                           {msg.content}
@@ -211,6 +221,7 @@ export function ChatBot({ subjectName, noteTitle }: ChatBotProps) {
         <Button
           onClick={() => setIsOpen(!isOpen)}
           size="lg"
+          aria-label={isOpen ? 'Close AI chat assistant' : 'Open AI chat assistant'}
           className={`relative h-14 w-14 rounded-full shadow-lg transition-transform hover:scale-110 ${isOpen ? 'bg-destructive hover:bg-destructive/90' : 'bg-gradient-to-r from-primary to-accent'}`}
         >
           {isOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}

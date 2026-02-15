@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Book } from 'lucide-react';
 import { toast } from 'sonner';
+import { PageMeta } from '@/components/PageMeta';
 
 interface Subject {
   id: string;
@@ -41,7 +42,7 @@ const SemesterSubjects = () => {
       const { data: courseData, error: courseError } = await supabase
         .from('courses')
         .select('name, short_name')
-        .eq('id', courseId)
+        .eq('id', courseId!)
         .single();
 
       if (courseError) throw courseError;
@@ -50,14 +51,14 @@ const SemesterSubjects = () => {
       const { data: subjectsData, error: subjectsError } = await supabase
         .from('subjects')
         .select('id, name, code')
-        .eq('course_id', courseId)
+        .eq('course_id', courseId!)
         .eq('year', parseInt(year!))
         .eq('semester', parseInt(semester!))
         .order('code');
 
       if (subjectsError) throw subjectsError;
       setSubjects(subjectsData || []);
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Failed to load subjects');
       console.error('Error fetching data:', error);
     } finally {
@@ -77,6 +78,7 @@ const SemesterSubjects = () => {
 
   return (
     <div className="min-h-screen py-12">
+      <PageMeta title={course ? `${course.short_name} - Subjects` : 'Subjects'} />
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
           <Button 

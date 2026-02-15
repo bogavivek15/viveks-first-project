@@ -3,12 +3,31 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { BookOpen, FileText, Download, Shield, Clock, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { PageMeta } from '@/components/PageMeta';
+import { Helmet } from 'react-helmet-async';
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "STUDENT DESK",
+  "url": "https://studentdesk.vercel.app",
+  "description": "Access quality B-Tech notes for all branches, years, and subjects.",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://studentdesk.vercel.app/dashboard?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+};
 
 const Home = () => {
   const { user } = useAuth();
 
   return (
     <div className="min-h-screen">
+      <PageMeta title="Home" description="Access quality B-Tech notes for all branches. Download subject-wise study materials for regular and supply exams." path="/" />
+      <Helmet>
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+      </Helmet>
       {/* Hero Section */}
       <section className="relative py-20 md:py-32 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />

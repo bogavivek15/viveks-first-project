@@ -8,6 +8,7 @@ import { Mail, MessageSquare, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
+import { PageMeta } from '@/components/PageMeta';
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(100, 'Name too long'),
@@ -86,6 +87,7 @@ const Contact = () => {
 
   return (
     <div className="min-h-screen py-12">
+      <PageMeta title="Contact Us" path="/contact" />
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">

@@ -124,9 +124,9 @@ export function ManageSubjectsTab() {
 
       form.reset();
       fetchSubjects();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Subject operation error:', error);
-      toast.error(error.message || 'Operation failed');
+      toast.error(error instanceof Error ? error.message : 'Operation failed');
     } finally {
       setSubmitting(false);
     }
@@ -150,9 +150,9 @@ export function ManageSubjectsTab() {
       if (error) throw error;
       toast.success('Subject deleted successfully');
       fetchSubjects();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Delete error:', error);
-      toast.error(error.message || 'Failed to delete subject');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete subject');
     } finally {
       setDeleteId(null);
     }

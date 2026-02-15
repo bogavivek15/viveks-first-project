@@ -42,6 +42,7 @@ interface Subject {
   id: string;
   name: string;
   code: string;
+  course_id: string;
   year: number;
   semester: number;
 }
@@ -66,20 +67,23 @@ export function UploadNotesTab() {
     fetchSubjects();
   }, []);
 
-  useEffect(() => {
-    const courseId = form.watch('courseId');
-    const year = form.watch('year');
-    const semester = form.watch('semester');
+  const watchedCourseId = form.watch('courseId');
+  const watchedYear = form.watch('year');
+  const watchedSemester = form.watch('semester');
 
-    if (courseId && year && semester) {
+  useEffect(() => {
+    if (watchedCourseId && watchedYear && watchedSemester) {
       const filtered = subjects.filter(
-        (s) => s.year === parseInt(year) && s.semester === parseInt(semester)
+        (s) =>
+          s.course_id === watchedCourseId &&
+          s.year === parseInt(watchedYear) &&
+          s.semester === parseInt(watchedSemester)
       );
       setFilteredSubjects(filtered);
     } else {
       setFilteredSubjects([]);
     }
-  }, [form.watch('courseId'), form.watch('year'), form.watch('semester'), subjects]);
+  }, [watchedCourseId, watchedYear, watchedSemester, subjects]);
 
   const fetchCourses = async () => {
     const { data, error } = await supabase.from('courses').select('*').order('short_name');
@@ -145,9 +149,9 @@ export function UploadNotesTab() {
       setUploadProgress(100);
       toast.success(data.resourceType === 'notes' ? 'Notes uploaded successfully!' : 'Question papers uploaded successfully!');
       form.reset();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Upload error:', error);
-      toast.error(error.message || 'Failed to upload notes');
+      toast.error(error instanceof Error ? error.message : 'Failed to upload notes');
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -342,7 +346,7 @@ export function UploadNotesTab() {
             <FormField
               control={form.control}
               name="file"
-              render={({ field: { value, onChange, ...field } }) => (
+              render={({ field: { value: _value, onChange, ...field } }) => (
                 <FormItem>
                   <FormLabel>PDF File</FormLabel>
                   <FormControl>

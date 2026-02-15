@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, FileText, Download, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { ChatBot } from '@/components/ChatBot';
+import { PageMeta } from '@/components/PageMeta';
 
 interface Note {
   id: string;
@@ -71,7 +72,7 @@ const SubjectNotes = () => {
           setSubject(subjectData);
           setNotes(notesData || []);
         }
-      } catch (error: any) {
+      } catch (error) {
         if (isMounted) {
           toast.error('Failed to load notes');
           console.error('Error fetching data:', error);
@@ -138,7 +139,7 @@ const SubjectNotes = () => {
   const getExamTypeBadge = (examType: string) => {
     if (!examType) return <Badge variant="outline">Unknown</Badge>;
 
-    const variants: Record<string, string> = {
+    const variants: Record<string, 'default' | 'secondary' | 'outline'> = {
       regular: 'default',
       supply: 'secondary',
       both: 'outline',
@@ -147,7 +148,7 @@ const SubjectNotes = () => {
     const variant = variants[examType] || 'outline';
     
     return (
-      <Badge variant={variant as any}>
+      <Badge variant={variant}>
         {examType === 'both' 
           ? 'Regular & Supply' 
           : examType.charAt(0).toUpperCase() + examType.slice(1)}
@@ -176,6 +177,7 @@ const SubjectNotes = () => {
 
   return (
     <div className="min-h-screen py-12">
+      <PageMeta title={subject ? subject.name : 'Notes'} />
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
           <Button 

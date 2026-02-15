@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { BookOpen, GraduationCap, ArrowRight, Upload, Search, Book } from 'lucide-react';
 import { toast } from 'sonner';
+import { PageMeta } from '@/components/PageMeta';
 
 interface Course {
   id: string;
@@ -28,7 +29,7 @@ interface SearchResult {
 }
 
 const Dashboard = () => {
-  const { user, loading: authLoading, isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -37,12 +38,6 @@ const Dashboard = () => {
   const [isSearching, setIsSearching] = useState(false);
 
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/login');
-    }
-  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     if (user) {
@@ -74,10 +69,10 @@ const Dashboard = () => {
 
         if (error) throw error;
         if (!controller.signal.aborted) {
-          setSearchResults((data as any) || []);
+          setSearchResults((data as SearchResult[]) || []);
         }
-      } catch (error: any) {
-        if (error?.name !== 'AbortError') {
+      } catch (error) {
+        if (error instanceof Error && error.name !== 'AbortError') {
           console.error('Search error:', error);
         }
       } finally {
@@ -102,7 +97,7 @@ const Dashboard = () => {
 
       if (error) throw error;
       setCourses(data || []);
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Failed to load courses');
       console.error('Error fetching courses:', error);
     } finally {
@@ -110,7 +105,7 @@ const Dashboard = () => {
     }
   };
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -123,6 +118,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen py-12">
+      <PageMeta title="Dashboard" path="/dashboard" />
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
           <div className="mb-8">

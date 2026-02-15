@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { User, Mail, BookOpen, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { BRANCHES } from '@/lib/constants';
+import { PageMeta } from '@/components/PageMeta';
 
 const profileSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(100, 'Name too long'),
@@ -17,7 +19,7 @@ const profileSchema = z.object({
 });
 
 const Profile = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
@@ -27,18 +29,13 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [profileData, setProfileData] = useState<any>(null);
+  const [profileData, setProfileData] = useState<Record<string, string | null> | null>(null);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/login');
-      return;
-    }
-
     if (user) {
       fetchProfile();
     }
-  }, [user, authLoading, navigate]);
+  }, [user]);
 
   const fetchProfile = async () => {
     try {
@@ -46,7 +43,7 @@ const Profile = () => {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user?.id)
+        .eq('id', user!.id)
         .maybeSingle();
 
       if (error) throw error;
@@ -65,7 +62,7 @@ const Profile = () => {
           email: user.email || '',
         }));
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error fetching profile:', error);
       toast.error('Failed to load profile');
     } finally {
@@ -94,7 +91,7 @@ const Profile = () => {
       const { error } = await supabase
         .from('profiles')
         .upsert({
-          id: user?.id,
+          id: user!.id,
           name: formData.name,
           branch: formData.branch || null,
           email: formData.email,
@@ -105,15 +102,15 @@ const Profile = () => {
 
       toast.success('Profile updated successfully!');
       fetchProfile();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error(error.message || 'Failed to update profile');
+      toast.error(error instanceof Error ? error.message : 'Failed to update profile');
     } finally {
       setSaving(false);
     }
   };
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -123,6 +120,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen py-12 px-4 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+      <PageMeta title="Profile" path="/profile" />
       <div className="container mx-auto max-w-4xl">
         <div className="mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
@@ -229,12 +227,9 @@ const Profile = () => {
                       <SelectValue placeholder="Select your branch" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="CSE">Computer Science & Engineering</SelectItem>
-                      <SelectItem value="ECE">Electronics & Communication</SelectItem>
-                      <SelectItem value="EEE">Electrical & Electronics</SelectItem>
-                      <SelectItem value="MECH">Mechanical Engineering</SelectItem>
-                      <SelectItem value="CIVIL">Civil Engineering</SelectItem>
-                      <SelectItem value="IT">Information Technology</SelectItem>
+                      {BRANCHES.map((b) => (
+                        <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

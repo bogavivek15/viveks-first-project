@@ -7,6 +7,9 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ProtectedRoute, AdminRoute } from "./components/ProtectedRoute";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import { HelmetProvider } from "react-helmet-async";
 import { Suspense, lazy } from "react";
 
 // 1. Configure Caching: Keep data fresh without hammering the database
@@ -47,6 +50,8 @@ const PageLoader = () => (
 
 const App = () => (
   <ErrorBoundary>
+    <HelmetProvider>
+    <ThemeProvider>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
@@ -65,13 +70,13 @@ const App = () => (
                     <Route path="/update-password" element={<UpdatePassword />} />
                     <Route path="/about" element={<About />} />
                     <Route path="/contact" element={<Contact />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                    <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                     <Route path="/course/:courseId" element={<CourseYears />} />
                     <Route path="/course/:courseId/year/:year" element={<YearSemesters />} />
                     <Route path="/course/:courseId/year/:year/semester/:semester" element={<SemesterSubjects />} />
                     <Route path="/course/:courseId/year/:year/semester/:semester/subject/:subjectId" element={<SubjectNotes />} />
-                    <Route path="/admin" element={<AdminPanel />} />
+                    <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
@@ -82,6 +87,8 @@ const App = () => (
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
+    </ThemeProvider>
+    </HelmetProvider>
   </ErrorBoundary>
 );
 

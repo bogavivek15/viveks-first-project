@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,18 +7,12 @@ import { UploadNotesTab } from '@/components/admin/UploadNotesTab';
 import { ManageSubjectsTab } from '@/components/admin/ManageSubjectsTab';
 import { ManageCoursesTab } from '@/components/admin/ManageCoursesTab';
 import ManageMessagesTab from '@/components/admin/ManageMessagesTab';
+import { PageMeta } from '@/components/PageMeta';
 
 const AdminPanel = () => {
-  const { user, isAdmin, loading } = useAuth();
+  const { loading } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!loading && (!user || !isAdmin)) {
-      navigate('/dashboard');
-    }
-  }, [user, isAdmin, loading, navigate]);
-
-  // Prevent content flash: don't render admin UI until auth is verified
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -28,12 +21,9 @@ const AdminPanel = () => {
     );
   }
 
-  if (!user || !isAdmin) {
-    return null;
-  }
-
   return (
     <div className="min-h-screen py-12">
+      <PageMeta title="Admin Panel" path="/admin" />
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
           <Button 

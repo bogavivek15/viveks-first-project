@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { BRANCHES, PASSWORD_MIN_LENGTH } from '@/lib/constants';
+import { PageMeta } from '@/components/PageMeta';
 
 const registerSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(100, 'Name too long'),
@@ -17,7 +19,7 @@ const registerSchema = z.object({
     .email('Invalid email format')
     .regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'Please enter a valid email address')
     .max(255, 'Email too long'),
-  password: z.string().min(6, 'Password must be at least 6 characters').max(100, 'Password too long'),
+  password: z.string().min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`).max(100, 'Password too long'),
   confirmPassword: z.string(),
   branch: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -70,8 +72,8 @@ const Register = () => {
 
       toast.success('Account created! Please check your email to verify your account.');
       navigate('/login');
-    } catch (error: any) {
-      toast.error(error.message || 'An error occurred');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -79,6 +81,7 @@ const Register = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+      <PageMeta title="Create Account" path="/register" />
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Create an Account</CardTitle>
@@ -146,12 +149,9 @@ const Register = () => {
                   <SelectValue placeholder="Select your branch" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="CSE">Computer Science & Engineering</SelectItem>
-                  <SelectItem value="ECE">Electronics & Communication</SelectItem>
-                  <SelectItem value="EEE">Electrical & Electronics</SelectItem>
-                  <SelectItem value="MECH">Mechanical Engineering</SelectItem>
-                  <SelectItem value="CIVIL">Civil Engineering</SelectItem>
-                  <SelectItem value="IT">Information Technology</SelectItem>
+                  {BRANCHES.map((b) => (
+                    <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

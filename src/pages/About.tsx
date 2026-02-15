@@ -1,9 +1,11 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { BookOpen, Heart, Target, Users } from 'lucide-react';
+import { PageMeta } from '@/components/PageMeta';
 
 const About = () => {
   return (
     <div className="min-h-screen py-12">
+      <PageMeta title="About" description="Learn about STUDENT DESK and our mission to help B-Tech students succeed." path="/about" />
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-bold text-center mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">

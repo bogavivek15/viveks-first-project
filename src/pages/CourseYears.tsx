@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
+import { PageMeta } from '@/components/PageMeta';
 
 interface Course {
   name: string;
@@ -34,12 +35,12 @@ const CourseYears = () => {
       const { data, error } = await supabase
         .from('courses')
         .select('name, short_name')
-        .eq('id', courseId)
+        .eq('id', courseId!)
         .single();
 
       if (error) throw error;
       setCourse(data);
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Failed to load course');
       console.error('Error fetching course:', error);
     } finally {
@@ -57,6 +58,7 @@ const CourseYears = () => {
 
   return (
     <div className="min-h-screen py-12">
+      <PageMeta title={course ? course.short_name : 'Course'} />
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <Button 

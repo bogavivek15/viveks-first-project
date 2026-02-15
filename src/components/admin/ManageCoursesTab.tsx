@@ -77,9 +77,9 @@ export function ManageCoursesTab() {
 
       form.reset();
       fetchCourses();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Course operation error:', error);
-      toast.error(error.message || 'Operation failed');
+      toast.error(error instanceof Error ? error.message : 'Operation failed');
     } finally {
       setSubmitting(false);
     }
@@ -101,9 +101,9 @@ export function ManageCoursesTab() {
       if (error) throw error;
       toast.success('Course deleted successfully');
       fetchCourses();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Delete error:', error);
-      toast.error(error.message || 'Failed to delete course');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete course');
     } finally {
       setDeleteId(null);
     }

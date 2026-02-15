@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from './ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { BookOpen, User, LogOut, LayoutDashboard, Menu, X } from 'lucide-react';
+import { BookOpen, User, LogOut, LayoutDashboard, Menu, Sun, Moon } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -10,10 +10,16 @@ import {
   SheetTitle,
   SheetTrigger,
 } from './ui/sheet';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export const Navbar = () => {
   const { user, signOut } = useAuth();
+  const { resolvedTheme, setTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const toggleTheme = () => {
+    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
+  };
 
   return (
     <>
@@ -40,6 +46,10 @@ export const Navbar = () => {
           <Link to="/contact" className="text-foreground/80 hover:text-foreground transition-colors">
             Contact
           </Link>
+
+          <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle dark mode">
+            {resolvedTheme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
           
           {user ? (
             <>
@@ -79,7 +89,7 @@ export const Navbar = () => {
         {/* Mobile Navigation */}
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetTrigger asChild className="md:hidden">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" aria-label="Open menu">
               <Menu className="h-6 w-6" />
             </Button>
           </SheetTrigger>
@@ -108,6 +118,11 @@ export const Navbar = () => {
               >
                 Contact
               </Link>
+
+              <Button variant="ghost" onClick={toggleTheme} className="justify-start gap-2">
+                {resolvedTheme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                {resolvedTheme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+              </Button>
               
               <div className="border-t pt-4 mt-2" />
               
