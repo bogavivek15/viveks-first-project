@@ -63,10 +63,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
 
     // 5. Prompt for AI model (kept concise for speed)
-    const prompt = `You are a B.Tech engineering tutor. Give exam-focused, concise answers.
-Rules: No greetings. Use **bold headings**, bullet points, short paragraphs. Markdown only. Be direct.
+    const prompt = `You are a B.Tech engineering study assistant.
+Rules:
+- If the student greets you (hi, hello, hey, etc.), reply with a SHORT friendly greeting (1 line max). Do NOT explain any topic.
+- If the student asks a question, give a concise exam-focused answer using **bold headings**, bullet points, short paragraphs. Max 150 words.
+- Markdown only. No greetings in answers. Be direct.
 ${context ? `Context: ${context}` : ""}
-Question: ${message}`;
+Student: ${message}`;
 
     // 6. Call Gemini API (flash-lite for fastest response)
     const controller = new AbortController();
