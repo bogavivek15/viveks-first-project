@@ -56,10 +56,17 @@ export function ChatBot({ subjectName, noteTitle }: ChatBotProps) {
     }, 5000);
 
     try {
+      // Send last 6 messages as conversation history for context
+      const chatHistory = messages
+        .filter(m => m.content !== `Hi! I'm your study assistant. Ask me any doubts about ${subjectName}!`)
+        .slice(-6)
+        .map(m => ({ role: m.role, content: m.content }));
+
       const { data, error } = await supabase.functions.invoke('ask-gemini', {
         body: {
           message: userMessage,
-          context: `Subject: ${subjectName}${noteTitle ? `, Specific Topic: ${noteTitle}` : ''}`
+          context: `Subject: ${subjectName}${noteTitle ? `, Specific Topic: ${noteTitle}` : ''}`,
+          history: chatHistory
         }
       });
 

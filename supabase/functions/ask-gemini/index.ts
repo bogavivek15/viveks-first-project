@@ -1,4 +1,4 @@
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,6 +10,7 @@ const corsHeaders = {
 interface AskGeminiRequest {
   message?: string;
   context?: string;
+  history?: { role: string; content: string }[];
 }
 
 Deno.serve(async (req: Request): Promise<Response> => {
@@ -20,8 +21,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   try {
     // 2. Ensure API key is available
-    if (!GEMINI_API_KEY) {
-      throw new Error("Supabase Secret GEMINI_API_KEY is not set.");
+    if (!GROQ_API_KEY) {
+      throw new Error("Supabase Secret GROQ_API_KEY is not set.");
     }
 
     // 3. Only accept POST requests
@@ -51,6 +52,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     const message = body.message?.trim();
     const context = body.context?.trim() || "";
+    const history = body.history || [];
 
     if (!message) {
       return new Response(
@@ -62,58 +64,88 @@ Deno.serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    // 5. Prompt for AI model (kept concise for speed)
-    const prompt = `You are a B.Tech engineering study assistant.
-Rules:
-- If the student greets you (hi, hello, hey, etc.), reply with a SHORT friendly greeting (1 line max). Do NOT explain any topic.
-- If the student asks a question, give a concise exam-focused answer using **bold headings**, bullet points, short paragraphs. Max 150 words.
-- Markdown only. No greetings in answers. Be direct.
-${context ? `Context: ${context}` : ""}
-Student: ${message}`;
+    // 5. System prompt
+    const systemPrompt = `You are a friendly and helpful B.Tech engineering study assistant.
 
-    // 6. Call Gemini API (flash-lite for fastest response)
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+Behavior Rules:
+1. GREETINGS: If the student ONLY says hi/hello/hey (nothing else), reply with a short friendly greeting (1-2 lines). Example: "Hey there! How can I help you with ${context || 'your studies'} today?"
+2. PERSONAL MESSAGES: If the student shares their name or personal info, acknowledge it warmly. Example: "Nice to meet you, [name]! How can I help you?"
+3. CONVERSATIONAL: If the student says something casual or conversational, respond naturally and friendly. Don't just say "Hello".
+4. SIMPLE QUESTIONS: Give a concise exam-focused answer (~200-300 words) with **bold headings**, bullet points.
+5. DETAILED REQUESTS: If the student asks for detail/lengthy/in-depth explanation, give a comprehensive answer (500-1000 words) with **Definition**, **Explanation**, **Key Points**, **Examples**, **Advantages/Disadvantages**, and **Exam-Important Points**.
+6. LANGUAGE REQUESTS: If asked to explain in a specific language, respond in that language. If asked for "Telugu in English letters" or "Tenglish", write Telugu words using English/Roman letters (transliteration).
+7. OFF-TOPIC: If the question is not related to academics, politely redirect. But still answer personal/casual messages naturally.
+8. Always use proper Markdown formatting.
+9. Remember the conversation context from previous messages.
+${context ? `Subject Context: ${context}` : ""}`;
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: prompt }],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 512,
+    // 6. Call Groq API (ultra-fast inference) with model fallback
+    const models = [
+      "llama-3.3-70b-versatile",
+      "llama-3.1-8b-instant",
+      "mixtral-8x7b-32768",
+    ];
+
+    let reply = "No response generated.";
+    const errors: string[] = [];
+
+    for (const model of models) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      try {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${GROQ_API_KEY}`,
           },
-        }),
-      },
-    );
+          signal: controller.signal,
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: "system", content: systemPrompt },
+              ...history.slice(-6).map((msg: any) => ({
+                role: msg.role === "assistant" ? "assistant" : "user",
+                content: msg.content,
+              })),
+              { role: "user", content: message },
+            ],
+            temperature: 0.3,
+            max_tokens: 2048,
+          }),
+        });
+        clearTimeout(timeoutId);
 
-    clearTimeout(timeoutId);
+        if (response.status === 429) {
+          errors.push(`${model}: rate-limited`);
+          continue;
+        }
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`API Error: ${response.status} - ${errorText}`);
-      
-      // If still hitting 429, tell the user clearly
-      if (response.status === 429) {
-          throw new Error("The server is busy (Rate Limit). Please wait 30 seconds.");
+        if (!response.ok) {
+          const errorText = await response.text();
+          errors.push(`${model}: ${response.status}`);
+          console.error(`API Error (${model}): ${response.status} - ${errorText}`);
+          continue;
+        }
+
+        const data = await response.json();
+        reply = data?.choices?.[0]?.message?.content || reply;
+        break;
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError?.name === "AbortError") {
+          errors.push(`${model}: timeout`);
+          continue;
+        }
+        throw fetchError;
       }
-      
-      throw new Error(`Google API Error (${response.status})`);
     }
 
-    const data = await response.json();
-    const reply: string =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "No response generated.";
+    if (reply === "No response generated.") {
+      console.error("All models failed:", errors.join(", "));
+      throw new Error(`All models are busy. Try again in a minute.`);
+    }
 
     return new Response(JSON.stringify({ reply }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -131,7 +163,7 @@ Student: ${message}`;
         reply: `Note: ${errMsg}`,
       }),
       {
-        status: 200, // Returning 200 so the frontend can display the error message in the chat UI
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );
