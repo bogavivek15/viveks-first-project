@@ -100,9 +100,9 @@ export function ChatBot({ subjectName, noteTitle }: ChatBotProps) {
       const reply = data?.reply || "I'm sorry, I couldn't understand that. Could you please rephrase?";
 
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Chat error:', error);
-      const errorMessage = error?.message || 'Unknown error';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast.error(`Chat error: ${errorMessage}`);
       setMessages(prev => [...prev, { role: 'assistant', content: `I'm having trouble connecting right now. Error: ${errorMessage}. Please try again later.` }]);
     } finally {
