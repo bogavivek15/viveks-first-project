@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageCircle, X, Send, Bot, User, Loader2, Clock } from 'lucide-react';
-// Reverting to the @ alias which is standard for this project configuration
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
@@ -72,39 +71,125 @@ export function ChatBot({ subjectName, noteTitle }: ChatBotProps) {
         .slice(-6)
         .map(m => ({ role: m.role, content: m.content }));
 
-      const { data, error } = await supabase.functions.invoke('ask-groq', {
-        body: {
-          message: userMessage,
-          context: `Subject: ${subjectName}${noteTitle ? `, Specific Topic: ${noteTitle}` : ''}`,
-          history: chatHistory
-        }
-      });
-
-      if (error) {
-        // For FunctionsHttpError, the edge function returned a non-2xx status
-        // but may still have a useful reply in the response body
-        if (error.context && typeof error.context.json === 'function') {
-          try {
-            const errorBody = await error.context.json();
-            if (errorBody?.reply) {
-              setMessages(prev => [...prev, { role: 'assistant', content: errorBody.reply }]);
-              return;
-            }
-          } catch {
-            // Could not parse error response body, fall through
-          }
-        }
-        throw error;
+      // Get auth token for the edge function
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error('Please log in to use the chatbot.');
+        setIsLoading(false);
+        return;
       }
 
-      const reply = data?.reply || "I'm sorry, I couldn't understand that. Could you please rephrase?";
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+      // Add an empty assistant message that we'll stream into
+      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/ask-groq`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': supabaseAnonKey,
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          context: `Subject: ${subjectName}${noteTitle ? `, Specific Topic: ${noteTitle}` : ''}`,
+          history: chatHistory,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        const errorMsg = errorData?.reply || `Server error (${response.status})`;
+        // Replace the empty assistant message with the error
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { role: 'assistant', content: errorMsg };
+          return updated;
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Read the SSE stream
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response stream available');
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete SSE lines
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith('data: ')) continue;
+
+          const data = trimmed.slice(6); // Remove 'data: '
+          if (data === '[DONE]') break;
+
+          try {
+            const parsed = JSON.parse(data);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              // Append new content to the last (assistant) message
+              setMessages(prev => {
+                const updated = [...prev];
+                const lastMsg = updated[updated.length - 1];
+                updated[updated.length - 1] = {
+                  ...lastMsg,
+                  content: lastMsg.content + content,
+                };
+                return updated;
+              });
+            }
+          } catch {
+            // Skip malformed JSON chunks
+          }
+        }
+      }
+
+      // If the assistant message ended up empty, provide a fallback
+      setMessages(prev => {
+        const updated = [...prev];
+        const lastMsg = updated[updated.length - 1];
+        if (lastMsg.role === 'assistant' && !lastMsg.content.trim()) {
+          updated[updated.length - 1] = {
+            ...lastMsg,
+            content: "I'm sorry, I couldn't generate a response. Please try again.",
+          };
+        }
+        return updated;
+      });
+
     } catch (error: unknown) {
       console.error('Chat error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast.error(`Chat error: ${errorMessage}`);
-      setMessages(prev => [...prev, { role: 'assistant', content: `I'm having trouble connecting right now. Error: ${errorMessage}. Please try again later.` }]);
+      // Replace the empty assistant message or add error message
+      setMessages(prev => {
+        const updated = [...prev];
+        const lastMsg = updated[updated.length - 1];
+        if (lastMsg.role === 'assistant' && !lastMsg.content.trim()) {
+          updated[updated.length - 1] = {
+            ...lastMsg,
+            content: `I'm having trouble connecting right now. Error: ${errorMessage}. Please try again later.`,
+          };
+        } else {
+          updated.push({ role: 'assistant', content: `I'm having trouble connecting right now. Error: ${errorMessage}. Please try again later.` });
+        }
+        return updated;
+      });
     } finally {
       setIsLoading(false);
     }
@@ -186,7 +271,7 @@ export function ChatBot({ subjectName, noteTitle }: ChatBotProps) {
                       )}
                     </div>
                   ))}
-                  {isLoading && (
+                  {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
                     <div className="flex gap-2 justify-start">
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                         <Bot className="h-5 w-5 text-primary" />

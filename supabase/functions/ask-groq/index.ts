@@ -176,7 +176,7 @@ ${context ? `Subject Context: ${context}` : ""}`;
 
     for (const model of models) {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
 
       try {
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -198,6 +198,7 @@ ${context ? `Subject Context: ${context}` : ""}`;
             ],
             temperature: 0.3,
             max_tokens: 2048,
+            stream: true,
           }),
         });
         clearTimeout(timeoutId);
@@ -214,9 +215,15 @@ ${context ? `Subject Context: ${context}` : ""}`;
           continue;
         }
 
-        const data = await response.json();
-        reply = data?.choices?.[0]?.message?.content || reply;
-        break;
+        // Stream the SSE response directly to the client
+        return new Response(response.body, {
+          headers: {
+            ...getCorsHeaders(req),
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+          },
+        });
       } catch (fetchError: any) {
         clearTimeout(timeoutId);
         if (fetchError?.name === "AbortError") {
