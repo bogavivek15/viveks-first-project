@@ -6,7 +6,7 @@ interface PageMetaProps {
   path?: string;
 }
 
-const BASE_URL = 'https://studentdesk.vercel.app';
+const BASE_URL = 'https://student-desk.online';
 const SITE_NAME = 'STUDENT DESK';
 
 /**

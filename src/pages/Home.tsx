@@ -10,11 +10,11 @@ const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebSite",
   "name": "STUDENT DESK",
-  "url": "https://studentdesk.vercel.app",
+  "url": "https://student-desk.online",
   "description": "Access quality B-Tech notes for all branches, years, and subjects.",
   "potentialAction": {
     "@type": "SearchAction",
-    "target": "https://studentdesk.vercel.app/dashboard?q={search_term_string}",
+    "target": "https://student-desk.online/dashboard?q={search_term_string}",
     "query-input": "required name=search_term_string"
   }
 };

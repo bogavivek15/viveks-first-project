@@ -25,7 +25,7 @@
       ]
     },
     {
-      "source": "/favicon.png",
+      "source": "/favicon.(ico|png)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=86400" }
       ]

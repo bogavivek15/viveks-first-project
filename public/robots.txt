@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://studentdesk.vercel.app/sitemap.xml
+Sitemap: https://student-desk.online/sitemap.xml
