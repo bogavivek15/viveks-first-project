@@ -25,6 +25,12 @@
       ]
     },
     {
+      "source": "/index.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    },
+    {
       "source": "/favicon.(ico|png)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=86400" }
