@@ -124,9 +124,8 @@ export function UploadNotesTab() {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
+      // Store just the path instead of public URL
       setUploadProgress(60);
-      const { data: urlData } = supabase.storage.from('notes').getPublicUrl(filePath);
 
       // Insert note metadata
       setUploadProgress(80);
@@ -139,7 +138,7 @@ export function UploadNotesTab() {
         semester: parseInt(data.semester),
         resource_type: data.resourceType,
         exam_type: data.examType,
-        file_url: urlData.publicUrl,
+        file_url: filePath,
         file_name: data.file.name,
         uploaded_by: user.id,
       });

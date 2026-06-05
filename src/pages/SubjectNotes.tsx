@@ -91,23 +91,51 @@ const SubjectNotes = () => {
     };
   }, [subjectId]);
 
-  const handleDownload = async (fileUrl: string, fileName: string) => {
-    // Validate download URL origin — only allow Supabase storage URLs
+  const getSignedUrl = async (filePath: string) => {
     try {
-      const url = new URL(fileUrl);
-      if (!url.hostname.endsWith('.supabase.co') && !url.hostname.endsWith('.supabase.in')) {
-        toast.error('Invalid download URL');
-        return;
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      
+      if (!session) {
+        toast.error('Please login to access notes');
+        navigate('/login');
+        return null;
       }
-    } catch {
-      toast.error('Invalid download URL');
-      return;
+
+      // Handle old full URLs gracefully for backward compatibility or direct replacement 
+      let storagePath = filePath;
+      if (filePath.includes('/storage/v1/object/public/notes/')) {
+        storagePath = filePath.substring(filePath.indexOf('/storage/v1/object/public/notes/') + '/storage/v1/object/public/notes/'.length);
+      }
+
+      const { data, error } = await supabase.storage
+        .from('notes')
+        .createSignedUrl(storagePath, 300);
+
+      if (error) {
+        throw error;
+      }
+      
+      if (!data?.signedUrl) {
+        throw new Error('Failed to generate signed URL');
+      }
+
+      return data.signedUrl;
+    } catch (error) {
+      console.error('Error generating signed URL:', error);
+      toast.error('Failed to access file. Please try again.');
+      return null;
     }
+  };
+
+  const handleDownload = async (fileUrl: string, fileName: string) => {
+    const signedUrl = await getSignedUrl(fileUrl);
+    if (!signedUrl) return;
 
     const toastId = toast.loading('Starting download...');
     
     try {
-      const response = await fetch(fileUrl);
+      const response = await fetch(signedUrl);
       if (!response.ok) throw new Error('Network response was not ok');
       
       const blob = await response.blob();
@@ -128,12 +156,15 @@ const SubjectNotes = () => {
       console.error('Download error:', error);
       toast.dismiss(toastId);
       toast.error('Download failed. Opening in new tab instead.');
-      window.open(fileUrl, '_blank');
+      window.open(signedUrl, '_blank');
     }
   };
 
-  const handleView = (fileUrl: string) => {
-    window.open(fileUrl, '_blank');
+  const handleView = async (fileUrl: string) => {
+    const signedUrl = await getSignedUrl(fileUrl);
+    if (signedUrl) {
+      window.open(signedUrl, '_blank');
+    }
   };
 
   const getExamTypeBadge = (examType: string) => {
