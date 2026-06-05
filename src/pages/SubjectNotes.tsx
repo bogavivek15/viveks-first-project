@@ -91,13 +91,13 @@ const SubjectNotes = () => {
     };
   }, [subjectId]);
 
-  const getSignedUrl = async (filePath: string) => {
+  const getSignedUrl = async (filePath: string, toastId?: string | number) => {
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
       
-      if (!session) {
-        toast.error('Please login to access notes');
+      if (sessionError || !session) {
+        if (toastId) toast.dismiss(toastId);
+        toast.error('Please sign in to access this note.');
         navigate('/login');
         return null;
       }
@@ -113,30 +113,48 @@ const SubjectNotes = () => {
         .createSignedUrl(storagePath, 300);
 
       if (error) {
-        throw error;
+        if (toastId) toast.dismiss(toastId);
+        console.error('Storage error:', error); // Log silently for debugging
+        const errorMessage = error.message?.toLowerCase() || '';
+        
+        if (errorMessage.includes('not found') || errorMessage.includes('object not found') || errorMessage.includes('bucket not found')) {
+          toast.error('This note is currently unavailable or has been removed.');
+        } else {
+          toast.error("We couldn't load this note right now. Please try again later.");
+        }
+        return null;
       }
       
       if (!data?.signedUrl) {
-        throw new Error('Failed to generate signed URL');
+        if (toastId) toast.dismiss(toastId);
+        toast.error("We couldn't load this note right now. Please try again later.");
+        return null;
       }
 
       return data.signedUrl;
     } catch (error) {
       console.error('Error generating signed URL:', error);
-      toast.error('Failed to access file. Please try again.');
+      if (toastId) toast.dismiss(toastId);
+      toast.error("We couldn't load this note right now. Please try again later.");
       return null;
     }
   };
 
   const handleDownload = async (fileUrl: string, fileName: string) => {
-    const signedUrl = await getSignedUrl(fileUrl);
+    const toastId = toast.loading('Preparing your note...');
+    const signedUrl = await getSignedUrl(fileUrl, toastId);
     if (!signedUrl) return;
 
-    const toastId = toast.loading('Starting download...');
+    toast.loading('Starting download...', { id: toastId });
     
     try {
       const response = await fetch(signedUrl);
-      if (!response.ok) throw new Error('Network response was not ok');
+      if (!response.ok) {
+        if (response.status === 404 || response.status === 403) {
+          throw new Error('not_found');
+        }
+        throw new Error('fetch_error');
+      }
       
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -155,14 +173,19 @@ const SubjectNotes = () => {
     } catch (error) {
       console.error('Download error:', error);
       toast.dismiss(toastId);
-      toast.error('Download failed. Opening in new tab instead.');
-      window.open(signedUrl, '_blank');
+      if (error instanceof Error && error.message === 'not_found') {
+        toast.error('This note is currently unavailable or has been removed.');
+      } else {
+        toast.error("We couldn't load this note right now. Please try again later.");
+      }
     }
   };
 
   const handleView = async (fileUrl: string) => {
-    const signedUrl = await getSignedUrl(fileUrl);
+    const toastId = toast.loading('Preparing your note...');
+    const signedUrl = await getSignedUrl(fileUrl, toastId);
     if (signedUrl) {
+      toast.dismiss(toastId);
       window.open(signedUrl, '_blank');
     }
   };

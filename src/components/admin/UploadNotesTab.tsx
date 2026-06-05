@@ -148,9 +148,14 @@ export function UploadNotesTab() {
       setUploadProgress(100);
       toast.success(data.resourceType === 'notes' ? 'Notes uploaded successfully!' : 'Question papers uploaded successfully!');
       form.reset();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Upload error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to upload notes');
+      const errorMessage = error?.message?.toLowerCase() || '';
+      if (errorMessage.includes('not found') || errorMessage.includes('bucket not found')) {
+        toast.error('The storage bucket is currently unavailable. Please try again later.');
+      } else {
+        toast.error('Failed to upload notes. Please try again later.');
+      }
     } finally {
       setUploading(false);
       setUploadProgress(0);
