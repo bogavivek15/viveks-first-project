@@ -70,8 +70,8 @@ const Register = () => {
         return;
       }
 
-      toast.success('Account created successfully!');
-      navigate('/dashboard');
+      toast.success('Account created, please login with your credentials');
+      navigate('/login');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'An error occurred');
     } finally {
