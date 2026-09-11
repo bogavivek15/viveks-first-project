@@ -217,6 +217,373 @@ export type Database = {
         }
         Relationships: []
       }
+      backtest_evaluations: {
+        Row: {
+          course_id: string
+          created_at: string
+          evaluation_summary: Json
+          hit_rate: number
+          id: string
+          precision_at_k: number
+          recall_at_k: number
+          subject_id: string
+          test_year: number
+          top_k: number
+          training_years: number[]
+          unit_coverage_percent: number
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          evaluation_summary?: Json
+          hit_rate?: number
+          id?: string
+          precision_at_k?: number
+          recall_at_k?: number
+          subject_id: string
+          test_year: number
+          top_k?: number
+          training_years?: number[]
+          unit_coverage_percent?: number
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          evaluation_summary?: Json
+          hit_rate?: number
+          id?: string
+          precision_at_k?: number
+          recall_at_k?: number
+          subject_id?: string
+          test_year?: number
+          top_k?: number
+          training_years?: number[]
+          unit_coverage_percent?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backtest_evaluations_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "backtest_evaluations_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      canonical_topics: {
+        Row: {
+          aliases: string[]
+          created_at: string
+          id: string
+          subject_id: string
+          topic_name: string
+          unit_number: number
+          updated_at: string
+        }
+        Insert: {
+          aliases?: string[]
+          created_at?: string
+          id?: string
+          subject_id: string
+          topic_name: string
+          unit_number: number
+          updated_at?: string
+        }
+        Update: {
+          aliases?: string[]
+          created_at?: string
+          id?: string
+          subject_id?: string
+          topic_name?: string
+          unit_number?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canonical_topics_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_papers: {
+        Row: {
+          back_image_url: string
+          course_id: string
+          created_at: string
+          error_message: string | null
+          exam_type: Database["public"]["Enums"]["exam_type"]
+          exam_year: number
+          front_image_url: string
+          id: string
+          image_hash: string | null
+          status: string
+          subject_id: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          back_image_url: string
+          course_id: string
+          created_at?: string
+          error_message?: string | null
+          exam_type?: Database["public"]["Enums"]["exam_type"]
+          exam_year: number
+          front_image_url: string
+          id?: string
+          image_hash?: string | null
+          status?: string
+          subject_id: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          back_image_url?: string
+          course_id?: string
+          created_at?: string
+          error_message?: string | null
+          exam_type?: Database["public"]["Enums"]["exam_type"]
+          exam_year?: number
+          front_image_url?: string
+          id?: string
+          image_hash?: string | null
+          status?: string
+          subject_id?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_papers_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_papers_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      extracted_questions: {
+        Row: {
+          canonical_topic_id: string | null
+          confidence: number
+          created_at: string
+          exam_year: number
+          id: string
+          is_verified: boolean
+          marks: number | null
+          paper_id: string
+          question_number: string
+          question_text: string
+          raw_extracted_topic: string | null
+          section: string | null
+          subject_id: string
+          unit_number: number | null
+          updated_at: string
+          verified_by: string | null
+        }
+        Insert: {
+          canonical_topic_id?: string | null
+          confidence?: number
+          created_at?: string
+          exam_year: number
+          id?: string
+          is_verified?: boolean
+          marks?: number | null
+          paper_id: string
+          question_number: string
+          question_text: string
+          raw_extracted_topic?: string | null
+          section?: string | null
+          subject_id: string
+          unit_number?: number | null
+          updated_at?: string
+          verified_by?: string | null
+        }
+        Update: {
+          canonical_topic_id?: string | null
+          confidence?: number
+          created_at?: string
+          exam_year?: number
+          id?: string
+          is_verified?: boolean
+          marks?: number | null
+          paper_id?: string
+          question_number?: string
+          question_text?: string
+          raw_extracted_topic?: string | null
+          section?: string | null
+          subject_id?: string
+          unit_number?: number | null
+          updated_at?: string
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extracted_questions_canonical_topic_id_fkey"
+            columns: ["canonical_topic_id"]
+            isOneToOne: false
+            referencedRelation: "canonical_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extracted_questions_paper_id_fkey"
+            columns: ["paper_id"]
+            isOneToOne: false
+            referencedRelation: "exam_papers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extracted_questions_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      topic_forecasts: {
+        Row: {
+          confidence_rating: number
+          course_id: string
+          created_at: string
+          created_by: string | null
+          exam_type: Database["public"]["Enums"]["exam_type"]
+          id: string
+          is_published: boolean
+          model_version: string
+          subject_id: string
+          total_papers_analyzed: number
+          updated_at: string
+          years_range: string
+        }
+        Insert: {
+          confidence_rating?: number
+          course_id: string
+          created_at?: string
+          created_by?: string | null
+          exam_type?: Database["public"]["Enums"]["exam_type"]
+          id?: string
+          is_published?: boolean
+          model_version?: string
+          subject_id: string
+          total_papers_analyzed?: number
+          updated_at?: string
+          years_range: string
+        }
+        Update: {
+          confidence_rating?: number
+          course_id?: string
+          created_at?: string
+          created_by?: string | null
+          exam_type?: Database["public"]["Enums"]["exam_type"]
+          id?: string
+          is_published?: boolean
+          model_version?: string
+          subject_id?: string
+          total_papers_analyzed?: number
+          updated_at?: string
+          years_range?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_forecasts_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_forecasts_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      topic_forecast_items: {
+        Row: {
+          appearance_years: number[]
+          canonical_topic_id: string
+          created_at: string
+          evidence: Json
+          forecast_id: string
+          forecast_score: number
+          historical_appearances: number
+          id: string
+          priority_tier: string
+          subject_id: string
+          total_papers: number
+          trend: string
+        }
+        Insert: {
+          appearance_years?: number[]
+          canonical_topic_id: string
+          created_at?: string
+          evidence?: Json
+          forecast_id: string
+          forecast_score: number
+          historical_appearances?: number
+          id?: string
+          priority_tier: string
+          subject_id: string
+          total_papers?: number
+          trend?: string
+        }
+        Update: {
+          appearance_years?: number[]
+          canonical_topic_id?: string
+          created_at?: string
+          evidence?: Json
+          forecast_id?: string
+          forecast_score?: number
+          historical_appearances?: number
+          id?: string
+          priority_tier?: string
+          subject_id?: string
+          total_papers?: number
+          trend?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_forecast_items_canonical_topic_id_fkey"
+            columns: ["canonical_topic_id"]
+            isOneToOne: false
+            referencedRelation: "canonical_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_forecast_items_forecast_id_fkey"
+            columns: ["forecast_id"]
+            isOneToOne: false
+            referencedRelation: "topic_forecasts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_forecast_items_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

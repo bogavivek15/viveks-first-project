@@ -3,11 +3,13 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, FileText, Download, Eye } from 'lucide-react';
+import { ArrowLeft, FileText, Download, Eye, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { ChatBot } from '@/components/ChatBot';
 import { PageMeta } from '@/components/PageMeta';
+import { ExamIntelligenceView } from '@/components/student/ExamIntelligenceView';
 
 interface Note {
   id: string;
@@ -247,11 +249,22 @@ const SubjectNotes = () => {
             <h1 className="text-3xl md:text-4xl font-bold mb-2">
               {subject?.code} - {subject?.name}
             </h1>
-            <p className="text-muted-foreground">Download notes, question papers, and study materials</p>
+            <p className="text-muted-foreground">Download notes, question papers, and explore AI exam forecasts</p>
           </div>
 
-          {notes.length > 0 ? (
-            <div className="space-y-8">
+          <Tabs defaultValue="materials" className="space-y-6">
+            <TabsList className="grid grid-cols-2 max-w-md">
+              <TabsTrigger value="materials" className="gap-1.5">
+                <FileText className="h-4 w-4" /> Study Materials
+              </TabsTrigger>
+              <TabsTrigger value="intelligence" className="gap-1.5">
+                <Sparkles className="h-4 w-4 text-primary" /> AI Exam Intelligence
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="materials" className="space-y-8">
+              {notes.length > 0 ? (
+                <div className="space-y-8">
               {/* Study Notes Section */}
               {studyNotes.length > 0 && (
                 <div>
@@ -367,18 +380,31 @@ const SubjectNotes = () => {
                   </div>
                 </div>
               )}
-            </div>
-          ) : (
-            <Card className="text-center py-12">
-              <CardContent>
-                <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Materials Available</h3>
-                <p className="text-muted-foreground">
-                  Study materials for this subject haven't been uploaded yet. Check back soon!
-                </p>
-              </CardContent>
-            </Card>
-          )}
+                </div>
+              ) : (
+                <Card className="text-center py-12">
+                  <CardContent>
+                    <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Materials Available</h3>
+                    <p className="text-muted-foreground">
+                      Study materials for this subject haven't been uploaded yet. Check back soon!
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            <TabsContent value="intelligence">
+              {subject && (
+                <ExamIntelligenceView
+                  subjectId={subject.id}
+                  subjectName={`${subject.code} - ${subject.name}`}
+                  onViewNote={handleView}
+                  onDownloadNote={handleDownload}
+                />
+              )}
+            </TabsContent>
+          </Tabs>
 
           {subject && (
             <ChatBot 

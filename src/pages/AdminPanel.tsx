@@ -7,6 +7,7 @@ import { UploadNotesTab } from '@/components/admin/UploadNotesTab';
 import { ManageSubjectsTab } from '@/components/admin/ManageSubjectsTab';
 import { ManageCoursesTab } from '@/components/admin/ManageCoursesTab';
 import ManageMessagesTab from '@/components/admin/ManageMessagesTab';
+import { ExamIntelligenceTab } from '@/components/admin/ExamIntelligenceTab';
 import { PageMeta } from '@/components/PageMeta';
 
 const AdminPanel = () => {
@@ -36,11 +37,12 @@ const AdminPanel = () => {
           </Button>
 
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Admin Panel</h1>
-          <p className="text-muted-foreground mb-8">Manage notes, subjects, and courses</p>
+          <p className="text-muted-foreground mb-8">Manage notes, subjects, courses, and AI exam intelligence</p>
 
           <Tabs defaultValue="notes" className="space-y-6">
-            <TabsList>
+            <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full">
               <TabsTrigger value="notes">Upload Notes</TabsTrigger>
+              <TabsTrigger value="intelligence">AI Intelligence</TabsTrigger>
               <TabsTrigger value="subjects">Manage Subjects</TabsTrigger>
               <TabsTrigger value="courses">Manage Courses</TabsTrigger>
               <TabsTrigger value="messages">Messages</TabsTrigger>
@@ -48,6 +50,10 @@ const AdminPanel = () => {
 
             <TabsContent value="notes">
               <UploadNotesTab />
+            </TabsContent>
+
+            <TabsContent value="intelligence">
+              <ExamIntelligenceTab />
             </TabsContent>
 
             <TabsContent value="subjects">
