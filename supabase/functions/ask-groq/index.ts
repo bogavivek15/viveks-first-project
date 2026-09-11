@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
 
 // Build dynamic CORS headers based on the request origin
 const ALLOWED_ORIGINS = [
@@ -43,8 +43,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   try {
     // 2. Ensure API key is available
-    if (!GROQ_API_KEY) {
-      throw new Error("Supabase Secret GROQ_API_KEY is not set.");
+    if (!OPENROUTER_API_KEY) {
+      throw new Error("Supabase Secret OPENROUTER_API_KEY is not set.");
     }
 
     // 3. Only accept POST requests
@@ -164,11 +164,12 @@ Behavior Rules:
 9. Remember the conversation context from previous messages.
 ${context ? `Subject Context: ${context}` : ""}`;
 
-    // 9. Call Groq API (ultra-fast inference) with model fallback
+    // 9. Call OpenRouter. Each model uses the same OPENROUTER_API_KEY.
+    // Try the requested balanced model first, then economical and fast fallbacks.
     const models = [
-      "llama-3.3-70b-versatile",
-      "llama-3.1-8b-instant",
-      "mixtral-8x7b-32768",
+      "qwen/qwen3.6-27b",
+      "qwen/qwen3.6-35b-a3b",
+      "qwen/qwen3.6-flash",
     ];
 
     let reply = "No response generated.";
@@ -179,11 +180,11 @@ ${context ? `Subject Context: ${context}` : ""}`;
       const timeoutId = setTimeout(() => controller.abort(), 25000);
 
       try {
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${GROQ_API_KEY}`,
+            "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
           },
           signal: controller.signal,
           body: JSON.stringify({
